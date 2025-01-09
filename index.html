@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Interactive Tutorial</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      background: transparent;
+    }
+
+    #tutorialWindow {
+      position: absolute;
+      top: 50px;
+      left: 50px;
+      width: 300px;
+      padding: 15px;
+      background: rgba(0, 0, 0, 0.8);
+      color: white;
+      border-radius: 8px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+      cursor: grab;
+      user-select: none;
+    }
+
+    #header {
+      font-weight: bold;
+      margin-bottom: 10px;
+      text-align: center;
+    }
+
+    button {
+      display: block;
+      margin: 10px auto 0;
+      padding: 10px 20px;
+      font-size: 16px;
+      cursor: pointer;
+      border: none;
+      background: #4caf50;
+      color: white;
+      border-radius: 4px;
+      transition: background-color 0.3s;
+    }
+
+    button:hover {
+      background-color: #45a049;
+    }
+
+    button:active {
+      background-color: #3e8e41;
+    }
+  </style>
+</head>
+<body>
+  <div id="tutorialWindow">
+    <div id="header">Tutorial Window</div>
+    <p>Welcome to the game tutorial! Click "Start Tutorial" to begin.</p>
+    <button id="startTutorial">Start Tutorial</button>
+  </div>
+
+  <script>
+    // Movable Window Logic
+    const tutorialWindow = document.getElementById("tutorialWindow");
+    let isDragging = false;
+    let offsetX, offsetY;
+
+    tutorialWindow.addEventListener("mousedown", (e) => {
+      isDragging = true;
+      offsetX = e.clientX - tutorialWindow.offsetLeft;
+      offsetY = e.clientY - tutorialWindow.offsetTop;
+      tutorialWindow.style.cursor = "grabbing";
+    });
+
+    window.addEventListener("mousemove", (e) => {
+      if (isDragging) {
+        const x = Math.max(0, Math.min(window.innerWidth - tutorialWindow.offsetWidth, e.clientX - offsetX));
+        const y = Math.max(0, Math.min(window.innerHeight - tutorialWindow.offsetHeight, e.clientY - offsetY));
+        tutorialWindow.style.left = `${x}px`;
+        tutorialWindow.style.top = `${y}px`;
+      }
+    });
+
+    window.addEventListener("mouseup", () => {
+      isDragging = false;
+      tutorialWindow.style.cursor = "grab";
+    });
+
+    // Send a command to the game client
+    function sendCommand(command) {
+      const event = new CustomEvent("gameCommand", { detail: command });
+      window.dispatchEvent(event);
+    }
+
+    // Start the tutorial
+    document.getElementById("startTutorial").addEventListener("click", () => {
+      sendCommand({
+        type: "popup",
+        title: "Step 1: Go to the Dealership",
+        text: "You need to purchase a Speedo van. The dealership waypoint has been set for you."
+      });
+
+      // Set waypoint to dealership coordinates
+      sendCommand({
+        type: "setWaypoint",
+        x: -35,
+        y: -1103,
+        z: 26
+      });
+
+      // Update UI to show the tutorial has started
+      tutorialWindow.innerHTML = `
+        <div id="header">Tutorial in Progress</div>
+        <p>Head to the dealership to complete the first step.</p>
+      `;
+    });
+  </script>
+</body>
+</html>
