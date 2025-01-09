@@ -63,6 +63,10 @@
 
     <script>
         const tutorialWindow = document.getElementById("tutorialWindow");
+        const dealershipCoords = { x: -35, y: -1103, z: 26 };
+        const garageCoords = { x: -56, y: -1112, z: 25 };
+        const buyerCoords = { x: 835, y: -1942, z: 28 };
+        const arrivalRadius = 25; // Proximity radius to trigger the next step
         let isDragging = false;
         let offsetX, offsetY;
 
@@ -90,7 +94,10 @@
 
         // Start Tutorial Button Logic
         document.getElementById("startTutorial").addEventListener("click", () => {
-            // Post the popup and waypoint commands
+            // Pin the app
+            window.parent.postMessage({ type: "pin" }, "*");
+
+            // Display the first waypoint and popup
             window.parent.postMessage({
                 type: "popup",
                 title: "Step 1: Go to the Dealership",
@@ -99,9 +106,8 @@
 
             window.parent.postMessage({
                 type: "setWaypoint",
-                x: -35,
-                y: -1103,
-                z: 26
+                x: dealershipCoords.x,
+                y: dealershipCoords.y
             }, "*");
 
             // Update the tutorial window content
@@ -111,11 +117,85 @@
                 <button id="closeTutorial">Close Tutorial</button>
             `;
 
-            // Add close tutorial button logic
             document.getElementById("closeTutorial").addEventListener("click", () => {
                 window.parent.postMessage({ type: "pin" }, "*");
             });
+
+            window.addEventListener("message", handleArrival);
         });
+
+        function handleArrival(event) {
+            const playerData = event.data?.data;
+            if (playerData?.pos_x && playerData?.pos_y) {
+                if (checkArrival(playerData.pos_x, playerData.pos_y, dealershipCoords)) {
+                    window.removeEventListener("message", handleArrival);
+                    guideToGarage();
+                }
+            }
+        }
+
+        function guideToGarage() {
+            window.parent.postMessage({
+                type: "popup",
+                title: "Step 2: Go to the Garage",
+                text: "The next waypoint is at the garage. Press 'E' on the blue marker to spawn your Speedo van."
+            }, "*");
+
+            window.parent.postMessage({
+                type: "setWaypoint",
+                x: garageCoords.x,
+                y: garageCoords.y
+            }, "*");
+
+            tutorialWindow.innerHTML = `
+                <div id="header">Tutorial in Progress</div>
+                <p>Go to the garage and press 'E' on the blue marker to spawn your Speedo van.</p>
+            `;
+
+            window.addEventListener("message", handleGarageArrival);
+        }
+
+        function handleGarageArrival(event) {
+            const playerData = event.data?.data;
+            if (playerData?.pos_x && playerData?.pos_y) {
+                if (checkArrival(playerData.pos_x, playerData.pos_y, garageCoords)) {
+                    window.removeEventListener("message", handleGarageArrival);
+                    guideToBuyer();
+                }
+            }
+        }
+
+        function guideToBuyer() {
+            window.parent.postMessage({
+                type: "popup",
+                title: "Step 3: Deliver to the Buyer",
+                text: "Now, head to the eraser's buyer. The waypoint has been set for you."
+            }, "*");
+
+            window.parent.postMessage({
+                type: "setWaypoint",
+                x: buyerCoords.x,
+                y: buyerCoords.y
+            }, "*");
+
+            tutorialWindow.innerHTML = `
+                <div id="header">Tutorial in Progress</div>
+                <p>Head to the buyer's location to complete the tutorial.</p>
+                <button id="closeTutorial">Close Tutorial</button>
+            `;
+
+            document.getElementById("closeTutorial").addEventListener("click", () => {
+                window.parent.postMessage({ type: "pin" }, "*");
+            });
+        }
+
+        function checkArrival(playerX, playerY, targetCoords) {
+            const distance = Math.sqrt(
+                (playerX - targetCoords.x) ** 2 +
+                (playerY - targetCoords.y) ** 2
+            );
+            return distance < arrivalRadius;
+        }
     </script>
 </body>
 </html>
